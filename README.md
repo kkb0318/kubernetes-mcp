@@ -18,7 +18,7 @@ A Model Context Protocol (MCP) server for Kubernetes debugging and inspection. T
 
 - Access to a Kubernetes cluster (kubeconfig required)
 
-### Option 1: Install with Go (Recommended)
+### Option 1: Install with Go
 
 If you have Go installed, this is the easiest way:
 
@@ -33,7 +33,7 @@ The binary will be installed to `$GOPATH/bin/kubernetes-mcp` (or `$HOME/go/bin/k
 If you prefer to build from source:
 
 **Requirements:**
-- Go 1.24.2 or later
+- Go 1.24 or later
 
 ```bash
 git clone https://github.com/kkb0318/kubernetes-mcp.git

@@ -2,6 +2,10 @@
 
 [![tests](https://github.com/kkb0318/kubernetes-mcp/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/kkb0318/kubernetes-mcp/actions/workflows/test.yml)
 
+
+https://github.com/user-attachments/assets/89df70b0-65d1-461c-b4ab-84b2087136fa
+
+
 A Model Context Protocol (MCP) server for Kubernetes debugging and inspection. This server provides read-only access to Kubernetes resources without the ability to create or modify them, making it safe for debugging and monitoring purposes.
 
 ## Features

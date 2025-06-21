@@ -24,8 +24,19 @@ func NewKubernetesClient() (*KubernetesClient, error) {
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		// fallback to kubeconfig
-		home := os.Getenv("HOME")
-		kubeconfig := filepath.Join(home, ".kube", "config")
+		var kubeconfig string
+		if kubeconfigEnv := os.Getenv("KUBECONFIG"); kubeconfigEnv != "" {
+			kubeconfig = kubeconfigEnv
+		} else {
+			// Try multiple ways to find home directory
+			home := os.Getenv("HOME")
+			if home == "" {
+				if userHome, err := os.UserHomeDir(); err == nil {
+					home = userHome
+				}
+			}
+			kubeconfig = filepath.Join(home, ".kube", "config")
+		}
 		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load kubeconfig: %w", err)

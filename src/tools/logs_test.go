@@ -101,7 +101,9 @@ func TestParseAndValidateLogsParams(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := parseAndValidateLogsParams(tc.args)
+			client := &FakeLogClient{}
+			tool := NewLogTool(client)
+			result, err := tool.parseAndValidateLogsParams(tc.args)
 
 			if tc.expectedErr {
 				assert.Error(t, err)

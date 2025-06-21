@@ -101,7 +101,7 @@ func TestResource(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			l := NewListTool(tt.input)
+		l := NewListTool(tt.input)
 			req := &mcp.CallToolRequest{}
 			req.Params.Arguments = tt.request
 			actual, err := l.Handler(context.TODO(), *req)

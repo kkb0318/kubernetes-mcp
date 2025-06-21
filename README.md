@@ -49,9 +49,41 @@ go build -o kubernetes-mcp .
 
 ## Usage
 
-The server uses your default kubeconfig for cluster access. Ensure you have proper read permissions for the resources you want to inspect.
+### Configuration
 
-### Running the server
+To use this MCP server, add it to your configuration file:
+
+**Basic setup (uses ~/.kube/config automatically):**
+```json
+{
+  "mcpServers": {
+    "kubernetes": {
+      "command": "/path/to/kubernetes-mcp"
+    }
+  }
+}
+```
+
+**Replace `/path/to/kubernetes-mcp` with the actual path to your binary.**
+
+**Custom kubeconfig location:**
+```json
+{
+  "mcpServers": {
+    "kubernetes": {
+      "command": "/usr/local/bin/kubernetes-mcp",
+      "env": {
+        "KUBECONFIG": "/path/to/your/kubeconfig"
+      }
+    }
+  }
+}
+```
+
+
+### Manual Usage
+
+The server uses your default kubeconfig for cluster access. Ensure you have proper read permissions for the resources you want to inspect.
 
 ```bash
 ./kubernetes-mcp
@@ -154,13 +186,6 @@ This server is designed for debugging and inspection only:
 - Read-only access to cluster resources
 - Safe to use in production environments for monitoring
 
-## Configuration
-
-The server uses the standard Kubernetes client configuration:
-- `~/.kube/config` for local development
-- In-cluster configuration when running as a pod
-- Respects `KUBECONFIG` environment variable
-
 ## Contributing
 
 This project is open source and welcomes contributions. Please ensure all changes maintain the read-only nature of the server.
@@ -170,5 +195,3 @@ This project is open source and welcomes contributions. Please ensure all change
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Support
-
-For issues and questions, please use the GitHub issue tracker.

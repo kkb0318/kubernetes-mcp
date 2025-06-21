@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/kkb0318/kubernetes-mcp/src/validation"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -69,7 +70,7 @@ func (l *LogTool) Tool() mcp.Tool {
 
 // Handler fetches logs based on the provided request parameters.
 func (l *LogTool) Handler(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	input, err := parseAndValidateLogsParams(req.Params.Arguments)
+	input, err := l.parseAndValidateLogsParams(req.Params.Arguments)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse and validate list params: %w", err)
 	}
@@ -209,15 +210,21 @@ func sinceTime(sinceTime string) *metav1.Time {
 }
 
 // parseAndValidateLogsParams validates and parses the input parameters.
-func parseAndValidateLogsParams(args map[string]any) (*KubectlLogsInput, error) {
+func (l *LogTool) parseAndValidateLogsParams(args map[string]any) (*KubectlLogsInput, error) {
 	input := &KubectlLogsInput{}
 
 	if name, ok := args["name"]; ok && name != nil {
 		input.Name = name.(string)
+		if err := validation.ValidateResourceName(input.Name); err != nil {
+			return nil, fmt.Errorf("invalid pod name: %w", err)
+		}
 	}
 
 	if namespace, ok := args["namespace"]; ok && namespace != nil {
 		input.Namespace = namespace.(string)
+		if err := validation.ValidateNamespace(input.Namespace); err != nil {
+			return nil, fmt.Errorf("invalid namespace: %w", err)
+		}
 	}
 
 	if container, ok := args["container"]; ok && container != nil {

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kkb0318/kubernetes-mcp/src/validation"
 	"github.com/mark3labs/mcp-go/mcp"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,7 +42,7 @@ type ListTool struct {
 
 // NewListTool creates a new ListTool instance with the provided Kubernetes client.
 func NewListTool(client Client) ListTool {
-	return ListTool{client}
+	return ListTool{client: client}
 }
 
 // Tool returns the MCP tool definition for listing Kubernetes resources.
@@ -158,10 +159,10 @@ func (l ListTool) handleGroupDiscovery(groupFilter string) (*mcp.CallToolResult,
 	}
 
 	result := map[string]interface{}{
-		"groupFilter":        groupFilter,
-		"discoveredTypes":    discoveredTypes,
-		"totalFound":         len(matches),
-		"message":           fmt.Sprintf("Found %d resource types matching group filter '%s'", len(matches), groupFilter),
+		"groupFilter":     groupFilter,
+		"discoveredTypes": discoveredTypes,
+		"totalFound":      len(matches),
+		"message":         fmt.Sprintf("Found %d resource types matching group filter '%s'", len(matches), groupFilter),
 	}
 
 	out, err := json.Marshal(result)
@@ -252,7 +253,6 @@ func (l ListTool) discoverResourceByKind(kind string) (*gvrMatch, error) {
 	return findGVRByKind(apiResourceLists, kind)
 }
 
-
 // listResourceDetails retrieves full details of all resources matching the given GVR and input parameters.
 func (l ListTool) listResourceDetails(ctx context.Context, gvrMatch *gvrMatch, input *ListResourcesInput) (interface{}, error) {
 	ri, err := l.client.ResourceInterface(*gvrMatch.ToGroupVersionResource(), gvrMatch.namespaced, input.Namespace)
@@ -329,7 +329,6 @@ func (l ListTool) extractResourceStatus(obj *unstructured.Unstructured) Resource
 	return resource
 }
 
-
 // parseAndValidateListParams validates and extracts parameters from request arguments.
 func parseAndValidateListParams(args map[string]any) (*ListResourcesInput, error) {
 	input := &ListResourcesInput{}
@@ -342,6 +341,9 @@ func parseAndValidateListParams(args map[string]any) (*ListResourcesInput, error
 	// Kind: Required unless groupFilter is used for discovery
 	if kindVal, ok := args["kind"].(string); ok && kindVal != "" {
 		input.Kind = kindVal
+		if err := validation.ValidateKind(input.Kind); err != nil {
+			return nil, fmt.Errorf("invalid kind: %w", err)
+		}
 	} else if input.GroupFilter == "" {
 		return nil, errors.New("kind must be provided when groupFilter is not specified")
 	}
@@ -349,6 +351,9 @@ func parseAndValidateListParams(args map[string]any) (*ListResourcesInput, error
 	// Optional: namespace
 	if ns, ok := args["namespace"].(string); ok {
 		input.Namespace = ns
+		if err := validation.ValidateNamespace(input.Namespace); err != nil {
+			return nil, fmt.Errorf("invalid namespace: %w", err)
+		}
 	}
 	if input.Namespace == "" {
 		input.Namespace = metav1.NamespaceAll
@@ -357,6 +362,9 @@ func parseAndValidateListParams(args map[string]any) (*ListResourcesInput, error
 	// Optional: labelSelector
 	if labelSelector, ok := args["labelSelector"].(string); ok {
 		input.LabelSelector = labelSelector
+		if err := validation.ValidateLabelSelector(input.LabelSelector); err != nil {
+			return nil, fmt.Errorf("invalid labelSelector: %w", err)
+		}
 	}
 
 	// Optional: fieldSelector

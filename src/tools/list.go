@@ -147,9 +147,9 @@ func (l ListTool) handleGroupDiscovery(groupFilter string) (*mcp.CallToolResult,
 	}
 
 	// Format the discovered resource types
-	discoveredTypes := make([]map[string]interface{}, 0)
+	discoveredTypes := make([]map[string]any, 0)
 	for _, match := range matches {
-		discoveredTypes = append(discoveredTypes, map[string]interface{}{
+		discoveredTypes = append(discoveredTypes, map[string]any{
 			"kind":       match.apiRes.Kind,
 			"group":      match.groupVersion,
 			"resource":   match.apiRes.Name,
@@ -158,7 +158,7 @@ func (l ListTool) handleGroupDiscovery(groupFilter string) (*mcp.CallToolResult,
 		})
 	}
 
-	result := map[string]interface{}{
+	result := map[string]any{
 		"groupFilter":     groupFilter,
 		"discoveredTypes": discoveredTypes,
 		"totalFound":      len(matches),
@@ -254,7 +254,7 @@ func (l ListTool) discoverResourceByKind(kind string) (*gvrMatch, error) {
 }
 
 // listResourceDetails retrieves full details of all resources matching the given GVR and input parameters.
-func (l ListTool) listResourceDetails(ctx context.Context, gvrMatch *gvrMatch, input *ListResourcesInput) (interface{}, error) {
+func (l ListTool) listResourceDetails(ctx context.Context, gvrMatch *gvrMatch, input *ListResourcesInput) (any, error) {
 	ri, err := l.client.ResourceInterface(*gvrMatch.ToGroupVersionResource(), gvrMatch.namespaced, input.Namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource interface: %w", err)
@@ -280,13 +280,7 @@ func (l ListTool) buildListOptions(input *ListResourcesInput) metav1.ListOptions
 		listOptions.Limit = input.Limit
 	}
 
-	if input.TimeoutSeconds > 0 {
-		listOptions.TimeoutSeconds = &input.TimeoutSeconds
-	} else {
-		// Default timeout of 30 seconds
-		defaultTimeout := int64(30)
-		listOptions.TimeoutSeconds = &defaultTimeout
-	}
+	listOptions.TimeoutSeconds = &input.TimeoutSeconds
 
 	return listOptions
 }
@@ -380,6 +374,9 @@ func parseAndValidateListParams(args map[string]any) (*ListResourcesInput, error
 	// Optional: timeoutSeconds
 	if timeoutSeconds, ok := args["timeoutSeconds"].(float64); ok && timeoutSeconds > 0 {
 		input.TimeoutSeconds = int64(timeoutSeconds)
+	} else {
+		// Default timeout of 30 seconds
+		input.TimeoutSeconds = 30
 	}
 
 	// Optional: showDetails

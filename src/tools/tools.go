@@ -10,6 +10,7 @@ func RegisterTools(s *server.MCPServer, client Client) {
 		NewListTool(client),
 		NewLogTool(client),
 		NewDescribeTool(client),
+		NewListEventsTool(client),
 	}
 	for _, t := range tools {
 		s.AddTool(t.Tool(), t.Handler)

@@ -16,6 +16,7 @@ A Model Context Protocol (MCP) server that provides safe, read-only access to Ku
   - `list_resources`: List and filter Kubernetes resources with advanced options
   - `describe_resource`: Get detailed information about specific resources
   - `get_pod_logs`: Retrieve pod logs with sophisticated filtering capabilities
+  - `list_events`: List and filter Kubernetes events for debugging and monitoring
 
 ## 🚀 Quick Start
 
@@ -160,6 +161,41 @@ Retrieve pod logs with sophisticated filtering options.
   "tail": 50,
   "since": "5m",
   "timestamps": true
+}
+```
+
+### `list_events`
+List and filter Kubernetes events with advanced filtering options for debugging and monitoring.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `namespace` | optional | Target namespace (leave empty for all namespaces) |
+| `object` | optional | Filter by object name (e.g., pod name, deployment name) |
+| `eventType` | optional | Filter by event type: "Normal" or "Warning" (case-insensitive) |
+| `reason` | optional | Filter by event reason (e.g., "Pulled", "Failed", "FailedScheduling") |
+| `since` | optional | Duration like "5s", "2m", "1h", "24h" |
+| `sinceTime` | optional | RFC3339 timestamp (e.g., "2025-06-20T10:00:00Z") |
+| `limit` | optional | Maximum number of events to return (default: 100) |
+| `timeoutSeconds` | optional | Request timeout (default: 30s) |
+
+**Examples:**
+```json
+// List recent warning events
+{
+  "eventType": "Warning",
+  "since": "1h"
+}
+
+// List events for a specific pod
+{
+  "object": "nginx-pod",
+  "namespace": "default"
+}
+
+// List failed scheduling events
+{
+  "reason": "FailedScheduling",
+  "limit": 50
 }
 ```
 

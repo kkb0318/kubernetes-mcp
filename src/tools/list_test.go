@@ -101,7 +101,7 @@ func TestResource(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-		l := NewListTool(tt.input)
+			l := NewListTool(tt.input)
 			req := &mcp.CallToolRequest{}
 			req.Params.Arguments = tt.request
 			actual, err := l.Handler(context.TODO(), *req)
@@ -329,8 +329,9 @@ func TestParseAndValidateListParams(t *testing.T) {
 				"kind": "pods",
 			},
 			expected: &ListResourcesInput{
-				Kind:      "pods",
-				Namespace: metav1.NamespaceAll,
+				Kind:           "pods",
+				Namespace:      metav1.NamespaceAll,
+				TimeoutSeconds: 30,
 			},
 			expectedErr: false,
 		},
@@ -379,9 +380,10 @@ func TestParseAndValidateListParams(t *testing.T) {
 				"showDetails": true,
 			},
 			expected: &ListResourcesInput{
-				Kind:        "pods",
-				Namespace:   metav1.NamespaceAll,
-				ShowDetails: true,
+				Kind:           "pods",
+				Namespace:      metav1.NamespaceAll,
+				TimeoutSeconds: 30,
+				ShowDetails:    true,
 			},
 			expectedErr: false,
 		},
@@ -414,13 +416,13 @@ func TestListTool_Tool(t *testing.T) {
 
 func TestExtractResourceStatus(t *testing.T) {
 	tool := NewListTool(FakeKubernetesClient{})
-	
+
 	// Create a mock unstructured object with status
 	obj := &unstructured.Unstructured{}
 	obj.SetName("test-pod")
 	obj.SetNamespace("default")
 	obj.SetKind("Pod")
-	
+
 	// Set status using unstructured.SetNestedField to avoid deep copy issues
 	obj.Object = map[string]interface{}{
 		"metadata": map[string]interface{}{
@@ -452,7 +454,7 @@ func TestExtractResourceStatus(t *testing.T) {
 	assert.Equal(t, "default", result.Namespace)
 	assert.Equal(t, "Pod", result.Kind)
 	assert.NotNil(t, result.Status)
-	
+
 	// Check that status contains the expected fields
 	statusMap, ok := result.Status.(map[string]interface{})
 	assert.True(t, ok)
@@ -468,16 +470,6 @@ func TestBuildListOptions(t *testing.T) {
 		expected metav1.ListOptions
 	}{
 		{
-			name: "DefaultOptions",
-			input: &ListResourcesInput{
-				Kind:      "pods",
-				Namespace: "default",
-			},
-			expected: metav1.ListOptions{
-				TimeoutSeconds: func() *int64 { v := int64(30); return &v }(),
-			},
-		},
-		{
 			name: "FullOptions",
 			input: &ListResourcesInput{
 				Kind:           "deployments",
@@ -490,7 +482,7 @@ func TestBuildListOptions(t *testing.T) {
 			expected: metav1.ListOptions{
 				LabelSelector:  "app=nginx",
 				FieldSelector:  "metadata.name=test",
-				Limit:         10,
+				Limit:          10,
 				TimeoutSeconds: func() *int64 { v := int64(60); return &v }(),
 			},
 		},

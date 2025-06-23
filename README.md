@@ -2,44 +2,39 @@
 
 [![tests](https://github.com/kkb0318/kubernetes-mcp/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/kkb0318/kubernetes-mcp/actions/workflows/test.yml)
 
-
 https://github.com/user-attachments/assets/89df70b0-65d1-461c-b4ab-84b2087136fa
 
-
-A Model Context Protocol (MCP) server for Kubernetes debugging and inspection. This server provides read-only access to Kubernetes resources without the ability to create or modify them, making it safe for debugging and monitoring purposes.
+A Model Context Protocol (MCP) server that provides safe, read-only access to Kubernetes resources for debugging and inspection. Built with security in mind, it offers comprehensive cluster visibility without modification capabilities.
 
 ## Features
 
-- **Read-only access**: Safely inspect Kubernetes resources without modification capabilities
-- **CRD support**: Works with any Custom Resource Definitions (CRDs) in your cluster
-- **Substring search**: Discover resources by API group substring (e.g., "flux" for FluxCD, "argo" for ArgoCD)
-- **Built-in tools**:
-  - `list_resources`: List and filter Kubernetes resources
+- **🔒 Read-only security**: Safely inspect Kubernetes resources without modification capabilities
+- **🎯 CRD support**: Works seamlessly with any Custom Resource Definitions in your cluster
+- **🔍 Smart discovery**: Find resources by API group substring (e.g., "flux" for FluxCD, "argo" for ArgoCD)
+- **⚡ High performance**: Efficient resource querying with filtering and pagination
+- **🛠️ Comprehensive toolset**:
+  - `list_resources`: List and filter Kubernetes resources with advanced options
   - `describe_resource`: Get detailed information about specific resources
-  - `get_pod_logs`: Retrieve pod logs with advanced filtering
+  - `get_pod_logs`: Retrieve pod logs with sophisticated filtering capabilities
 
-## Installation
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- Access to a Kubernetes cluster (kubeconfig required)
+- Kubernetes cluster access with a valid kubeconfig file
+- Go 1.24+ (for building from source)
 
-### Option 1: Install with Go
+### Installation Options
 
-If you have Go installed, this is the easiest way:
+#### Option 1: Install with Go (Recommended)
 
 ```bash
 go install github.com/kkb0318/kubernetes-mcp@latest
 ```
 
-The binary will be installed to `$GOPATH/bin/kubernetes-mcp` (or `$HOME/go/bin/kubernetes-mcp` if `GOPATH` is not set).
+The binary will be available at `$GOPATH/bin/kubernetes-mcp` (or `$HOME/go/bin/kubernetes-mcp` if `GOPATH` is not set).
 
-### Option 2: Build from source
-
-If you prefer to build from source:
-
-**Requirements:**
-- Go 1.24 or later
+#### Option 2: Build from Source
 
 ```bash
 git clone https://github.com/kkb0318/kubernetes-mcp.git
@@ -47,13 +42,14 @@ cd kubernetes-mcp
 go build -o kubernetes-mcp .
 ```
 
-## Usage
+## ⚙️ Configuration
 
-### Configuration
+### MCP Server Setup
 
-To use this MCP server, add it to your configuration file:
+Add the server to your MCP configuration:
 
-**Basic setup (uses ~/.kube/config automatically):**
+#### Basic Configuration
+Uses `~/.kube/config` automatically:
 ```json
 {
   "mcpServers": {
@@ -64,14 +60,12 @@ To use this MCP server, add it to your configuration file:
 }
 ```
 
-**Replace `/path/to/kubernetes-mcp` with the actual path to your binary.**
-
-**Custom kubeconfig location:**
+#### Custom Kubeconfig
 ```json
 {
   "mcpServers": {
     "kubernetes": {
-      "command": "/usr/local/bin/kubernetes-mcp",
+      "command": "/path/to/kubernetes-mcp",
       "env": {
         "KUBECONFIG": "/path/to/your/kubeconfig"
       }
@@ -80,58 +74,62 @@ To use this MCP server, add it to your configuration file:
 }
 ```
 
+> **Note**: Replace `/path/to/kubernetes-mcp` with your actual binary path.
 
-### Manual Usage
-
-The server uses your default kubeconfig for cluster access. Ensure you have proper read permissions for the resources you want to inspect.
+### Standalone Usage
 
 ```bash
+# Default kubeconfig (~/.kube/config)
 ./kubernetes-mcp
+
+# Custom kubeconfig path
+KUBECONFIG=/path/to/your/kubeconfig ./kubernetes-mcp
 ```
 
-## Available Tools
+**Important**: Ensure you have appropriate read permissions for the Kubernetes resources you want to inspect.
 
-### 1. `list_resources`
+## 🛠️ Available Tools
 
-List Kubernetes resources with filtering capabilities.
+### `list_resources`
+List and filter Kubernetes resources with advanced capabilities.
 
-**Parameters:**
-- `kind` (required): Resource type (Pod, Deployment, Service, etc.) or "all" for discovery
-- `groupFilter` (optional): Filter by API group substring to discover project-specific resources
-- `namespace` (optional): Target namespace (defaults to all namespaces)
-- `labelSelector` (optional): Filter by labels (e.g., "app=nginx")
-- `fieldSelector` (optional): Filter by fields (e.g., "metadata.name=my-pod")
-- `limit` (optional): Maximum number of resources to return
-- `timeoutSeconds` (optional): Request timeout (default: 30s)
-- `showDetails` (optional): Return full resource objects instead of summary
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `kind` | **required** | Resource type (Pod, Deployment, Service, etc.) or "all" for discovery |
+| `groupFilter` | optional | Filter by API group substring for project-specific resources |
+| `namespace` | optional | Target namespace (defaults to all namespaces) |
+| `labelSelector` | optional | Filter by labels (e.g., "app=nginx") |
+| `fieldSelector` | optional | Filter by fields (e.g., "metadata.name=my-pod") |
+| `limit` | optional | Maximum number of resources to return |
+| `timeoutSeconds` | optional | Request timeout (default: 30s) |
+| `showDetails` | optional | Return full resource objects instead of summary |
 
-**Example usage:**
+**Examples:**
 ```json
+// List pods with label selector
 {
   "kind": "Pod",
   "namespace": "default",
   "labelSelector": "app=nginx"
 }
-```
 
-**Discovery mode:**
-```json
+// Discover FluxCD resources
 {
   "kind": "all",
   "groupFilter": "flux"
 }
 ```
 
-### 2. `describe_resource`
+### `describe_resource`
+Get detailed information about a specific Kubernetes resource.
 
-Get detailed information about a specific resource.
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `kind` | **required** | Resource type (Pod, Deployment, etc.) |
+| `name` | **required** | Resource name |
+| `namespace` | optional | Target namespace |
 
-**Parameters:**
-- `kind` (required): Resource type
-- `name` (required): Resource name
-- `namespace` (optional): Target namespace
-
-**Example usage:**
+**Example:**
 ```json
 {
   "kind": "Pod",
@@ -140,58 +138,59 @@ Get detailed information about a specific resource.
 }
 ```
 
-### 3. `get_pod_logs`
+### `get_pod_logs`
+Retrieve pod logs with sophisticated filtering options.
 
-Retrieve pod logs with various filtering options.
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `name` | **required** | Pod name |
+| `namespace` | optional | Pod namespace (defaults to "default") |
+| `container` | optional | Specific container name |
+| `tail` | optional | Number of lines from the end (default: 100) |
+| `since` | optional | Duration like "5s", "2m", "3h" |
+| `sinceTime` | optional | RFC3339 timestamp |
+| `timestamps` | optional | Include timestamps in output |
+| `previous` | optional | Get logs from previous container instance |
 
-**Parameters:**
-- `name` (required): Pod name
-- `namespace` (optional): Pod namespace (defaults to "default")
-- `container` (optional): Specific container name
-- `tail` (optional): Number of lines from the end (default: 100)
-- `since` (optional): Duration like "5s", "2m", "3h"
-- `sinceTime` (optional): RFC3339 timestamp
-- `timestamps` (optional): Include timestamps
-- `previous` (optional): Get logs from previous container instance
-
-**Example usage:**
+**Example:**
 ```json
 {
   "name": "nginx-pod",
   "namespace": "default",
   "tail": 50,
-  "since": "5m"
+  "since": "5m",
+  "timestamps": true
 }
 ```
 
-## Key Features
+## 🌟 Advanced Features
 
-### CRD Support
+### 🎯 Custom Resource Definition (CRD) Support
+Automatically discovers and works with any CRDs in your cluster. Simply use the CRD's Kind name with `list_resources` or `describe_resource` tools.
 
-The server automatically discovers and works with any Custom Resource Definitions in your cluster. Simply use the CRD's Kind name with the `list_resources` or `describe_resource` tools.
-
-### Resource Discovery
-
+### 🔍 Smart Resource Discovery
 Use the `groupFilter` parameter to discover resources by API group substring:
 
-- `"flux"` - Discover FluxCD resources (HelmReleases, Kustomizations, etc.)
-- `"argo"` - Discover ArgoCD resources (Applications, AppProjects, etc.)
-- `"istio"` - Discover Istio resources (VirtualServices, DestinationRules, etc.)
-- `"cert-manager"` - Discover cert-manager resources (Certificates, Issuers, etc.)
+| Filter | Discovers | Examples |
+|--------|-----------|----------|
+| `"flux"` | FluxCD resources | HelmReleases, Kustomizations, GitRepositories |
+| `"argo"` | ArgoCD resources | Applications, AppProjects, ApplicationSets |
+| `"istio"` | Istio resources | VirtualServices, DestinationRules, Gateways |
+| `"cert-manager"` | cert-manager resources | Certificates, Issuers, ClusterIssuers |
 
-### Safety First
+### 🔒 Security & Safety
+Built with security as a primary concern:
+- ✅ **Read-only access** - No resource creation, modification, or deletion
+- ✅ **Production safe** - Secure for use in production environments
+- ✅ **Minimal permissions** - Only requires read access to cluster resources
+- ✅ **No destructive operations** - Cannot harm your cluster
 
-This server is designed for debugging and inspection only:
-- No resource creation, modification, or deletion capabilities
-- Read-only access to cluster resources
-- Safe to use in production environments for monitoring
+---
 
-## Contributing
+## 🤝 Contributing
 
-This project is open source and welcomes contributions. Please ensure all changes maintain the read-only nature of the server.
+We welcome contributions! Please ensure all changes maintain the read-only nature of the server and include appropriate tests.
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support

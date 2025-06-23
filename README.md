@@ -173,7 +173,7 @@ List and filter Kubernetes events with advanced filtering options for debugging 
 | `object` | optional | Filter by object name (e.g., pod name, deployment name) |
 | `eventType` | optional | Filter by event type: "Normal" or "Warning" (case-insensitive) |
 | `reason` | optional | Filter by event reason (e.g., "Pulled", "Failed", "FailedScheduling") |
-| `since` | optional | Duration like "5s", "2m", "1h", "24h" |
+| `since` | optional | Duration like "5s", "2m", "1h" |
 | `sinceTime` | optional | RFC3339 timestamp (e.g., "2025-06-20T10:00:00Z") |
 | `limit` | optional | Maximum number of events to return (default: 100) |
 | `timeoutSeconds` | optional | Request timeout (default: 30s) |
@@ -183,7 +183,7 @@ List and filter Kubernetes events with advanced filtering options for debugging 
 // List recent warning events
 {
   "eventType": "Warning",
-  "since": "1h"
+  "since": "30m"
 }
 
 // List events for a specific pod

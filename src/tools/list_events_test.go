@@ -49,7 +49,8 @@ func TestListEventsTool_Handler_ClientsetError(t *testing.T) {
 		err:       errors.New("clientset error"),
 	}
 
-	tool := NewListEventsTool(client)
+	multiClient := NewFakeMultiClusterClient(client)
+	tool := NewListEventsTool(multiClient)
 
 	req := mcp.CallToolRequest{
 		Params: struct {
@@ -171,7 +172,8 @@ func TestParseAndValidateEventsParams(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			client := &FakeEventsClient{}
-			tool := NewListEventsTool(client)
+			multiClient := NewFakeMultiClusterClient(client)
+	tool := NewListEventsTool(multiClient)
 			result, err := tool.parseAndValidateEventsParams(tc.args)
 
 			if tc.expectedErr {
@@ -190,7 +192,8 @@ func TestParseAndValidateEventsParams(t *testing.T) {
 
 func TestListEventsTool_buildListOptions(t *testing.T) {
 	client := &FakeEventsClient{}
-	tool := NewListEventsTool(client)
+	multiClient := NewFakeMultiClusterClient(client)
+	tool := NewListEventsTool(multiClient)
 
 	testCases := []struct {
 		name     string
@@ -240,7 +243,8 @@ func TestListEventsTool_buildListOptions(t *testing.T) {
 
 func TestListEventsTool_filterEvents(t *testing.T) {
 	client := &FakeEventsClient{}
-	tool := NewListEventsTool(client)
+	multiClient := NewFakeMultiClusterClient(client)
+	tool := NewListEventsTool(multiClient)
 
 	// Create test events
 	now := time.Now()
@@ -323,7 +327,8 @@ func TestListEventsTool_filterEvents(t *testing.T) {
 
 func TestListEventsTool_isEventWithinTimeRange(t *testing.T) {
 	client := &FakeEventsClient{}
-	tool := NewListEventsTool(client)
+	multiClient := NewFakeMultiClusterClient(client)
+	tool := NewListEventsTool(multiClient)
 
 	now := time.Now()
 	event := &corev1.Event{
@@ -387,7 +392,8 @@ func TestListEventsTool_isEventWithinTimeRange(t *testing.T) {
 
 func TestListEventsTool_convertToEventInfos(t *testing.T) {
 	client := &FakeEventsClient{}
-	tool := NewListEventsTool(client)
+	multiClient := NewFakeMultiClusterClient(client)
+	tool := NewListEventsTool(multiClient)
 
 	now := time.Now()
 	events := []corev1.Event{
@@ -455,7 +461,8 @@ func TestListEventsTool_convertToEventInfos(t *testing.T) {
 
 func TestListEventsTool_Tool(t *testing.T) {
 	client := &FakeEventsClient{}
-	tool := NewListEventsTool(client)
+	multiClient := NewFakeMultiClusterClient(client)
+	tool := NewListEventsTool(multiClient)
 
 	mcpTool := tool.Tool()
 

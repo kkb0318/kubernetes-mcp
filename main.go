@@ -18,13 +18,13 @@ func main() {
 		server.WithToolCapabilities(false),
 	)
 	
-	k8s, err := client.NewKubernetesClient()
+	multiClient, err := client.NewMultiClusterClient()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating Kubernetes client: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error creating MultiCluster client: %v\n", err)
 		os.Exit(1)
 	}
 	
-	tools.RegisterTools(s, k8s)
+	tools.RegisterTools(s, multiClient)
 
 	if err := server.ServeStdio(s); err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting MCP server: %v\n", err)

@@ -17,6 +17,7 @@ import (
 
 // ListResourcesInput represents the input parameters for listing Kubernetes resources.
 type ListResourcesInput struct {
+	Context        string `json:"context,omitempty"`
 	Kind           string `json:"kind"`
 	GroupFilter    string `json:"groupFilter,omitempty"`
 	Namespace      string `json:"namespace,omitempty"`
@@ -29,26 +30,29 @@ type ListResourcesInput struct {
 
 // ResourceWithStatus represents a resource with its status information extracted.
 type ResourceWithStatus struct {
-	Name      string      `json:"name"`
-	Namespace string      `json:"namespace,omitempty"`
-	Kind      string      `json:"kind"`
-	Status    interface{} `json:"status,omitempty"`
+	Name      string `json:"name"`
+	Namespace string `json:"namespace,omitempty"`
+	Kind      string `json:"kind"`
+	Status    any    `json:"status,omitempty"`
 }
 
 // ListTool provides functionality to list Kubernetes resources by kind.
 type ListTool struct {
-	client Client
+	multiClient MultiClusterClientInterface
 }
 
-// NewListTool creates a new ListTool instance with the provided Kubernetes client.
-func NewListTool(client Client) ListTool {
-	return ListTool{client: client}
+// NewListTool creates a new ListTool instance with the provided MultiClusterClient.
+func NewListTool(multiClient MultiClusterClientInterface) ListTool {
+	return ListTool{multiClient: multiClient}
 }
 
 // Tool returns the MCP tool definition for listing Kubernetes resources.
 func (l ListTool) Tool() mcp.Tool {
 	return mcp.NewTool("list_resources",
 		mcp.WithDescription("List Kubernetes resources with their status information by default, with advanced filtering options"),
+		mcp.WithString("context",
+			mcp.Description("Kubernetes context name from kubeconfig to use for this request (leave empty for current context)"),
+		),
 		mcp.WithString("kind",
 			mcp.Description("Kind of the Kubernetes resource, e.g., Pod, Deployment, Service, ConfigMap, or any CRD. Use 'all' with groupFilter to discover all resource types for a project."),
 		),
@@ -83,26 +87,32 @@ func (l ListTool) Handler(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 		return nil, err
 	}
 
+	// Get the appropriate client for the context
+	client, err := l.multiClient.GetClient(input.Context)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get client for context '%s': %w", input.Context, err)
+	}
+
 	// Handle groupFilter functionality for discovering resources
 	if input.GroupFilter != "" {
 		if input.Kind == "all" || input.Kind == "" {
 			// Discovery mode: return all resource types for the group
-			return l.handleGroupDiscovery(input.GroupFilter)
+			return l.handleGroupDiscovery(client, input.GroupFilter)
 		} else {
 			// Filter mode: find specific kind within the group
-			return l.handleGroupFilteredList(ctx, input)
+			return l.handleGroupFilteredList(ctx, client, input)
 		}
 	}
 
 	// Original functionality for specific kind
-	gvrMatch, err := l.discoverResourceByKind(input.Kind)
+	gvrMatch, err := l.discoverResourceByKind(client, input.Kind)
 	if err != nil {
 		return nil, err
 	}
 
 	if input.ShowDetails {
 		// Return full resource details (complete objects)
-		resources, err := l.listResourceDetails(ctx, gvrMatch, input)
+		resources, err := l.listResourceDetails(ctx, client, gvrMatch, input)
 		if err != nil {
 			return nil, err
 		}
@@ -113,7 +123,7 @@ func (l ListTool) Handler(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 		return mcp.NewToolResultText(string(out)), nil
 	} else {
 		// Default: Return resources with status information
-		resourcesWithStatus, err := l.listResourcesWithStatus(ctx, gvrMatch, input)
+		resourcesWithStatus, err := l.listResourcesWithStatus(ctx, client, gvrMatch, input)
 		if err != nil {
 			return nil, err
 		}
@@ -126,8 +136,8 @@ func (l ListTool) Handler(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 }
 
 // handleGroupDiscovery returns all available resource types for a given group filter
-func (l ListTool) handleGroupDiscovery(groupFilter string) (*mcp.CallToolResult, error) {
-	discoClient, err := l.client.DiscoClient()
+func (l ListTool) handleGroupDiscovery(client Client, groupFilter string) (*mcp.CallToolResult, error) {
+	discoClient, err := client.DiscoClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discovery client: %w", err)
 	}
@@ -173,8 +183,8 @@ func (l ListTool) handleGroupDiscovery(groupFilter string) (*mcp.CallToolResult,
 }
 
 // handleGroupFilteredList lists resources of a specific kind within a filtered group
-func (l ListTool) handleGroupFilteredList(ctx context.Context, input *ListResourcesInput) (*mcp.CallToolResult, error) {
-	discoClient, err := l.client.DiscoClient()
+func (l ListTool) handleGroupFilteredList(ctx context.Context, client Client, input *ListResourcesInput) (*mcp.CallToolResult, error) {
+	discoClient, err := client.DiscoClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discovery client: %w", err)
 	}
@@ -216,7 +226,7 @@ func (l ListTool) handleGroupFilteredList(ctx context.Context, input *ListResour
 
 	// Now list the resources using the found GVR
 	if input.ShowDetails {
-		resources, err := l.listResourceDetails(ctx, gvrMatch, input)
+		resources, err := l.listResourceDetails(ctx, client, gvrMatch, input)
 		if err != nil {
 			return nil, err
 		}
@@ -226,7 +236,7 @@ func (l ListTool) handleGroupFilteredList(ctx context.Context, input *ListResour
 		}
 		return mcp.NewToolResultText(string(out)), nil
 	} else {
-		resourcesWithStatus, err := l.listResourcesWithStatus(ctx, gvrMatch, input)
+		resourcesWithStatus, err := l.listResourcesWithStatus(ctx, client, gvrMatch, input)
 		if err != nil {
 			return nil, err
 		}
@@ -239,8 +249,8 @@ func (l ListTool) handleGroupFilteredList(ctx context.Context, input *ListResour
 }
 
 // discoverResourceByKind discovers and returns the GroupVersionResource match for a given kind.
-func (l ListTool) discoverResourceByKind(kind string) (*gvrMatch, error) {
-	discoClient, err := l.client.DiscoClient()
+func (l ListTool) discoverResourceByKind(client Client, kind string) (*gvrMatch, error) {
+	discoClient, err := client.DiscoClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discovery client: %w", err)
 	}
@@ -254,8 +264,8 @@ func (l ListTool) discoverResourceByKind(kind string) (*gvrMatch, error) {
 }
 
 // listResourceDetails retrieves full details of all resources matching the given GVR and input parameters.
-func (l ListTool) listResourceDetails(ctx context.Context, gvrMatch *gvrMatch, input *ListResourcesInput) (any, error) {
-	ri, err := l.client.ResourceInterface(*gvrMatch.ToGroupVersionResource(), gvrMatch.namespaced, input.Namespace)
+func (l ListTool) listResourceDetails(ctx context.Context, client Client, gvrMatch *gvrMatch, input *ListResourcesInput) (any, error) {
+	ri, err := client.ResourceInterface(*gvrMatch.ToGroupVersionResource(), gvrMatch.namespaced, input.Namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource interface: %w", err)
 	}
@@ -286,8 +296,8 @@ func (l ListTool) buildListOptions(input *ListResourcesInput) metav1.ListOptions
 }
 
 // listResourcesWithStatus retrieves resources and extracts their status information.
-func (l ListTool) listResourcesWithStatus(ctx context.Context, gvrMatch *gvrMatch, input *ListResourcesInput) ([]ResourceWithStatus, error) {
-	ri, err := l.client.ResourceInterface(*gvrMatch.ToGroupVersionResource(), gvrMatch.namespaced, input.Namespace)
+func (l ListTool) listResourcesWithStatus(ctx context.Context, client Client, gvrMatch *gvrMatch, input *ListResourcesInput) ([]ResourceWithStatus, error) {
+	ri, err := client.ResourceInterface(*gvrMatch.ToGroupVersionResource(), gvrMatch.namespaced, input.Namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource interface: %w", err)
 	}
@@ -326,6 +336,11 @@ func (l ListTool) extractResourceStatus(obj *unstructured.Unstructured) Resource
 // parseAndValidateListParams validates and extracts parameters from request arguments.
 func parseAndValidateListParams(args map[string]any) (*ListResourcesInput, error) {
 	input := &ListResourcesInput{}
+
+	// Optional: context
+	if context, ok := args["context"].(string); ok {
+		input.Context = context
+	}
 
 	// Optional: groupFilter
 	if groupFilter, ok := args["groupFilter"].(string); ok {

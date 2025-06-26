@@ -45,7 +45,8 @@ func TestLogTool_Handler_ClientsetError(t *testing.T) {
 		err:       errors.New("clientset error"),
 	}
 
-	tool := NewLogTool(client)
+	multiClient := NewFakeMultiClusterClient(client)
+	tool := NewLogTool(multiClient)
 
 	req := mcp.CallToolRequest{
 		Params: struct {
@@ -102,7 +103,8 @@ func TestParseAndValidateLogsParams(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			client := &FakeLogClient{}
-			tool := NewLogTool(client)
+			multiClient := NewFakeMultiClusterClient(client)
+	tool := NewLogTool(multiClient)
 			result, err := tool.parseAndValidateLogsParams(tc.args)
 
 			if tc.expectedErr {
@@ -189,7 +191,8 @@ func TestSinceTime(t *testing.T) {
 
 func TestLogTool_Tool(t *testing.T) {
 	client := &FakeLogClient{}
-	tool := NewLogTool(client)
+	multiClient := NewFakeMultiClusterClient(client)
+	tool := NewLogTool(multiClient)
 
 	mcpTool := tool.Tool()
 

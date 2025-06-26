@@ -12,22 +12,26 @@ import (
 )
 
 type DescribeResourceInput struct {
+	Context   string `json:"context,omitempty"`
 	Kind      string `json:"kind"`
 	Name      string `json:"name"`
 	Namespace string `json:"namespace,omitempty"`
 }
 
 type DescribeTool struct {
-	client Client
+	multiClient MultiClusterClientInterface
 }
 
-func NewDescribeTool(client Client) *DescribeTool {
-	return &DescribeTool{client: client}
+func NewDescribeTool(multiClient MultiClusterClientInterface) *DescribeTool {
+	return &DescribeTool{multiClient: multiClient}
 }
 
 func (d *DescribeTool) Tool() mcp.Tool {
 	return mcp.NewTool("describe_resource",
 		mcp.WithDescription("Describe a specific Kubernetes resource by kind and name, similar to 'kubectl describe'"),
+		mcp.WithString("context",
+			mcp.Description("Kubernetes context name from kubeconfig to use for this request (leave empty for current context)"),
+		),
 		mcp.WithString("kind",
 			mcp.Required(),
 			mcp.Description("Kind of the Kubernetes resource, e.g., Pod, Deployment, Service, ConfigMap, or any CRD"),
@@ -48,12 +52,18 @@ func (d *DescribeTool) Handler(ctx context.Context, req mcp.CallToolRequest) (*m
 		return nil, err
 	}
 
-	gvrMatch, err := d.discoverResourceByKind(input.Kind)
+	// Get the appropriate client for the context
+	client, err := d.multiClient.GetClient(input.Context)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get client for context '%s': %w", input.Context, err)
+	}
+
+	gvrMatch, err := d.discoverResourceByKind(client, input.Kind)
 	if err != nil {
 		return nil, err
 	}
 
-	resource, err := d.getResource(ctx, gvrMatch, input)
+	resource, err := d.getResource(ctx, client, gvrMatch, input)
 	if err != nil {
 		return nil, err
 	}
@@ -68,8 +78,8 @@ func (d *DescribeTool) Handler(ctx context.Context, req mcp.CallToolRequest) (*m
 	return mcp.NewToolResultText(string(out)), nil
 }
 
-func (d *DescribeTool) discoverResourceByKind(kind string) (*gvrMatch, error) {
-	discoClient, err := d.client.DiscoClient()
+func (d *DescribeTool) discoverResourceByKind(client Client, kind string) (*gvrMatch, error) {
+	discoClient, err := client.DiscoClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create discovery client: %w", err)
 	}
@@ -82,8 +92,8 @@ func (d *DescribeTool) discoverResourceByKind(kind string) (*gvrMatch, error) {
 	return findGVRByKind(apiResourceLists, kind)
 }
 
-func (d *DescribeTool) getResource(ctx context.Context, gvrMatch *gvrMatch, input *DescribeResourceInput) (*unstructured.Unstructured, error) {
-	ri, err := d.client.ResourceInterface(*gvrMatch.ToGroupVersionResource(), gvrMatch.namespaced, input.Namespace)
+func (d *DescribeTool) getResource(ctx context.Context, client Client, gvrMatch *gvrMatch, input *DescribeResourceInput) (*unstructured.Unstructured, error) {
+	ri, err := client.ResourceInterface(*gvrMatch.ToGroupVersionResource(), gvrMatch.namespaced, input.Namespace)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create resource interface: %w", err)
 	}
@@ -129,6 +139,11 @@ func (d *DescribeTool) formatResourceDescription(resource *unstructured.Unstruct
 
 func parseAndValidateDescribeParams(args map[string]any) (*DescribeResourceInput, error) {
 	input := &DescribeResourceInput{}
+
+	// Optional: context
+	if context, ok := args["context"].(string); ok {
+		input.Context = context
+	}
 
 	if kindVal, ok := args["kind"].(string); ok && kindVal != "" {
 		input.Kind = kindVal

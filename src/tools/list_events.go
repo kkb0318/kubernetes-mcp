@@ -17,6 +17,7 @@ import (
 
 // ListEventsInput represents the input parameters for listing Kubernetes events.
 type ListEventsInput struct {
+	Context        string `json:"context,omitempty"`
 	Namespace      string `json:"namespace,omitempty"`
 	Object         string `json:"object,omitempty"`
 	EventType      string `json:"eventType,omitempty"`
@@ -42,18 +43,21 @@ type EventInfo struct {
 
 // ListEventsTool provides functionality to list Kubernetes events with advanced filtering.
 type ListEventsTool struct {
-	client Client
+	multiClient MultiClusterClientInterface
 }
 
-// NewListEventsTool creates a new ListEventsTool instance with the provided Kubernetes client.
-func NewListEventsTool(client Client) *ListEventsTool {
-	return &ListEventsTool{client: client}
+// NewListEventsTool creates a new ListEventsTool instance with the provided MultiClusterClient.
+func NewListEventsTool(multiClient MultiClusterClientInterface) *ListEventsTool {
+	return &ListEventsTool{multiClient: multiClient}
 }
 
 // Tool returns the MCP tool definition for listing Kubernetes events.
 func (l *ListEventsTool) Tool() mcp.Tool {
 	return mcp.NewTool("list_events",
 		mcp.WithDescription("List Kubernetes events with advanced filtering options for debugging and monitoring"),
+		mcp.WithString("context",
+			mcp.Description("Kubernetes context name from kubeconfig to use for this request (leave empty for current context)"),
+		),
 		mcp.WithString("namespace",
 			mcp.Description("Kubernetes namespace to list events from (leave empty for all namespaces, use 'default' for default namespace)"),
 		),
@@ -88,7 +92,13 @@ func (l *ListEventsTool) Handler(ctx context.Context, req mcp.CallToolRequest) (
 		return nil, fmt.Errorf("failed to parse and validate events params: %w", err)
 	}
 
-	clientset, err := l.client.Clientset()
+	// Get the appropriate client for the context
+	client, err := l.multiClient.GetClient(input.Context)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get client for context '%s': %w", input.Context, err)
+	}
+
+	clientset, err := client.Clientset()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get clientset: %w", err)
 	}
@@ -254,6 +264,11 @@ func (l *ListEventsTool) convertToEventInfos(events []corev1.Event) []EventInfo 
 // parseAndValidateEventsParams validates and extracts parameters from request arguments.
 func (l *ListEventsTool) parseAndValidateEventsParams(args map[string]any) (*ListEventsInput, error) {
 	input := &ListEventsInput{}
+
+	// Optional: context
+	if context, ok := args["context"].(string); ok && context != "" {
+		input.Context = context
+	}
 
 	if ns, ok := args["namespace"].(string); ok && ns != "" {
 		input.Namespace = ns

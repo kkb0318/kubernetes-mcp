@@ -14,6 +14,7 @@ import (
 )
 
 type KubectlLogsInput struct {
+	Context    string `json:"context,omitempty"`
 	Name       string `json:"name"`
 	Namespace  string `json:"namespace"`
 	Container  string `json:"container,omitempty"`
@@ -26,20 +27,21 @@ type KubectlLogsInput struct {
 
 // LogTool handles fetching logs based on the input parameters.
 type LogTool struct {
-	client Client
+	multiClient MultiClusterClientInterface
 }
 
-// NewLogTool creates a new LogTool with the provided Kubernetes client.
-func NewLogTool(client Client) *LogTool {
-	return &LogTool{
-		client: client,
-	}
+// NewLogTool creates a new LogTool with the provided MultiClusterClient.
+func NewLogTool(multiClient MultiClusterClientInterface) *LogTool {
+	return &LogTool{multiClient: multiClient}
 }
 
 // Tool returns the MCP tool definition for fetching pod logs.
 func (l *LogTool) Tool() mcp.Tool {
 	return mcp.NewTool("get_pod_logs",
 		mcp.WithDescription("Get logs from a Kubernetes pod with various filtering options"),
+		mcp.WithString("context",
+			mcp.Description("Kubernetes context name from kubeconfig to use for this request (leave empty for current context)"),
+		),
 		mcp.WithString("name",
 			mcp.Required(),
 			mcp.Description("Name of the pod to get logs from"),
@@ -75,7 +77,13 @@ func (l *LogTool) Handler(ctx context.Context, req mcp.CallToolRequest) (*mcp.Ca
 		return nil, fmt.Errorf("failed to parse and validate list params: %w", err)
 	}
 
-	clientset, err := l.client.Clientset()
+	// Get the appropriate client for the context
+	client, err := l.multiClient.GetClient(input.Context)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get client for context '%s': %w", input.Context, err)
+	}
+
+	clientset, err := client.Clientset()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get clientset: %w", err)
 	}
@@ -212,6 +220,11 @@ func sinceTime(sinceTime string) *metav1.Time {
 // parseAndValidateLogsParams validates and parses the input parameters.
 func (l *LogTool) parseAndValidateLogsParams(args map[string]any) (*KubectlLogsInput, error) {
 	input := &KubectlLogsInput{}
+
+	// Optional: context
+	if context, ok := args["context"]; ok && context != nil {
+		input.Context = context.(string)
+	}
 
 	if name, ok := args["name"]; ok && name != nil {
 		input.Name = name.(string)

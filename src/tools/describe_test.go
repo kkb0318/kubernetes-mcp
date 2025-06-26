@@ -107,7 +107,8 @@ func (f FakeDescribeKubernetesClient) ResourceInterface(gvr schema.GroupVersionR
 
 func TestDescribeTool_Tool(t *testing.T) {
 	client := FakeDescribeKubernetesClient{}
-	tool := NewDescribeTool(client)
+	multiClient := NewFakeMultiClusterClient(client)
+	tool := NewDescribeTool(multiClient)
 
 	mcpTool := tool.Tool()
 
@@ -211,7 +212,8 @@ func TestDescribeTool_Handler(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			tool := NewDescribeTool(tt.client)
+			multiClient := NewFakeMultiClusterClient(tt.client)
+			tool := NewDescribeTool(multiClient)
 			req := &mcp.CallToolRequest{}
 			req.Params.Arguments = tt.request
 
@@ -336,7 +338,9 @@ func TestParseAndValidateDescribeParams(t *testing.T) {
 }
 
 func TestDescribeTool_FormatResourceDescription(t *testing.T) {
-	tool := NewDescribeTool(FakeDescribeKubernetesClient{})
+	client := FakeDescribeKubernetesClient{}
+	multiClient := NewFakeMultiClusterClient(client)
+	tool := NewDescribeTool(multiClient)
 
 	testPod := &unstructured.Unstructured{}
 	testPod.SetName("test-pod")
@@ -412,7 +416,9 @@ func TestDescribeTool_FormatResourceDescription(t *testing.T) {
 }
 
 func TestDescribeTool_FormatResourceDescriptionWithoutSpecStatus(t *testing.T) {
-	tool := NewDescribeTool(FakeDescribeKubernetesClient{})
+	client := FakeDescribeKubernetesClient{}
+	multiClient := NewFakeMultiClusterClient(client)
+	tool := NewDescribeTool(multiClient)
 
 	// Create a resource without spec and status
 	testConfigMap := &unstructured.Unstructured{}

@@ -15,3 +15,10 @@ type Client interface {
 	Clientset() (*kubernetes.Clientset, error)
 	ResourceInterface(gvr schema.GroupVersionResource, namespaced bool, ns string) (dynamic.ResourceInterface, error)
 }
+
+// MultiClusterClientInterface for managing multiple cluster connections.
+type MultiClusterClientInterface interface {
+	GetClient(context string) (Client, error)
+	GetDefaultContext() string
+	ListContexts() ([]string, error)
+}

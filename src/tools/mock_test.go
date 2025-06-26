@@ -75,3 +75,27 @@ func (f *fakeDiscoveryClient) Invalidate() {
 func (f *fakeDiscoveryClient) WithLegacy() discovery.DiscoveryInterface {
 	return nil
 }
+
+// FakeMultiClusterClient implements MultiClusterClientInterface for testing
+type FakeMultiClusterClient struct {
+	client Client
+}
+
+func NewFakeMultiClusterClient(client Client) *FakeMultiClusterClient {
+	return &FakeMultiClusterClient{client: client}
+}
+
+func (f *FakeMultiClusterClient) GetClient(context string) (Client, error) {
+	return f.client, nil
+}
+
+func (f *FakeMultiClusterClient) GetDefaultContext() string {
+	return "test-context"
+}
+
+func (f *FakeMultiClusterClient) ListContexts() ([]string, error) {
+	return []string{"test-context", "other-context"}, nil
+}
+
+// Compile-time verification that FakeMultiClusterClient implements MultiClusterClientInterface
+var _ MultiClusterClientInterface = (*FakeMultiClusterClient)(nil)

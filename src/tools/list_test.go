@@ -101,7 +101,8 @@ func TestResource(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			l := NewListTool(tt.input)
+			multiClient := NewFakeMultiClusterClient(tt.input)
+			l := NewListTool(multiClient)
 			req := &mcp.CallToolRequest{}
 			req.Params.Arguments = tt.request
 			actual, err := l.Handler(context.TODO(), *req)
@@ -406,7 +407,8 @@ func TestParseAndValidateListParams(t *testing.T) {
 
 func TestListTool_Tool(t *testing.T) {
 	client := FakeKubernetesClient{}
-	tool := NewListTool(client)
+	multiClient := NewFakeMultiClusterClient(client)
+	tool := NewListTool(multiClient)
 
 	mcpTool := tool.Tool()
 
@@ -415,7 +417,9 @@ func TestListTool_Tool(t *testing.T) {
 }
 
 func TestExtractResourceStatus(t *testing.T) {
-	tool := NewListTool(FakeKubernetesClient{})
+	client := FakeKubernetesClient{}
+	multiClient := NewFakeMultiClusterClient(client)
+	tool := NewListTool(multiClient)
 
 	// Create a mock unstructured object with status
 	obj := &unstructured.Unstructured{}
@@ -490,7 +494,9 @@ func TestBuildListOptions(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			tool := NewListTool(FakeKubernetesClient{})
+			client := FakeKubernetesClient{}
+			multiClient := NewFakeMultiClusterClient(client)
+			tool := NewListTool(multiClient)
 			result := tool.buildListOptions(tc.input)
 
 			assert.Equal(t, tc.expected.LabelSelector, result.LabelSelector)

@@ -1,6 +1,8 @@
 # Kubernetes MCP Server
 
 [![tests](https://github.com/kkb0318/kubernetes-mcp/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/kkb0318/kubernetes-mcp/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/kkb0318/kubernetes-mcp/graph/badge.svg?token=RPOAC26LAH)](https://codecov.io/gh/kkb0318/kubernetes-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 https://github.com/user-attachments/assets/89df70b0-65d1-461c-b4ab-84b2087136fa
 
@@ -10,6 +12,7 @@ A Model Context Protocol (MCP) server that provides safe, read-only access to Ku
 
 - **🔒 Read-only security**: Safely inspect Kubernetes resources without modification capabilities
 - **🎯 CRD support**: Works seamlessly with any Custom Resource Definitions in your cluster
+- **🌐 Multi-cluster support**: Switch between different Kubernetes contexts seamlessly
 - **🔍 Smart discovery**: Find resources by API group substring (e.g., "flux" for FluxCD, "argo" for ArgoCD)
 - **⚡ High performance**: Efficient resource querying with filtering and pagination
 - **🛠️ Comprehensive toolset**:
@@ -96,6 +99,7 @@ List and filter Kubernetes resources with advanced capabilities.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `context` | optional | Kubernetes context name from kubeconfig (leave empty for current context) |
 | `kind` | **required** | Resource type (Pod, Deployment, Service, etc.) or "all" for discovery |
 | `groupFilter` | optional | Filter by API group substring for project-specific resources |
 | `namespace` | optional | Target namespace (defaults to all namespaces) |
@@ -114,6 +118,13 @@ List and filter Kubernetes resources with advanced capabilities.
   "labelSelector": "app=nginx"
 }
 
+// List pods from a specific cluster context
+{
+  "kind": "Pod",
+  "context": "production-cluster",
+  "namespace": "default"
+}
+
 // Discover FluxCD resources
 {
   "kind": "all",
@@ -126,6 +137,7 @@ Get detailed information about a specific Kubernetes resource.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `context` | optional | Kubernetes context name from kubeconfig (leave empty for current context) |
 | `kind` | **required** | Resource type (Pod, Deployment, etc.) |
 | `name` | **required** | Resource name |
 | `namespace` | optional | Target namespace |
@@ -144,6 +156,7 @@ Retrieve pod logs with sophisticated filtering options.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `context` | optional | Kubernetes context name from kubeconfig (leave empty for current context) |
 | `name` | **required** | Pod name |
 | `namespace` | optional | Pod namespace (defaults to "default") |
 | `container` | optional | Specific container name |
@@ -169,6 +182,7 @@ List and filter Kubernetes events with advanced filtering options for debugging 
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
+| `context` | optional | Kubernetes context name from kubeconfig (leave empty for current context) |
 | `namespace` | optional | Target namespace (leave empty for all namespaces) |
 | `object` | optional | Filter by object name (e.g., pod name, deployment name) |
 | `eventType` | optional | Filter by event type: "Normal" or "Warning" (case-insensitive) |
@@ -200,6 +214,38 @@ List and filter Kubernetes events with advanced filtering options for debugging 
 ```
 
 ## 🌟 Advanced Features
+
+### 🌐 Multi-Cluster Support
+Seamlessly work with multiple Kubernetes clusters using context switching:
+
+- **Context Parameter**: All tools now support an optional `context` parameter to specify which cluster to query
+- **Automatic Discovery**: Uses your existing kubeconfig file and automatically discovers available contexts
+- **Default Context**: When no context is specified, uses the current context from your kubeconfig
+- **Cached Connections**: Efficiently manages connections to multiple clusters with connection caching
+
+**Multi-cluster Examples:**
+```json
+// Query production cluster
+{
+  "kind": "Pod",
+  "context": "production-cluster",
+  "namespace": "default"
+}
+
+// Get logs from staging environment
+{
+  "name": "api-server",
+  "context": "staging-cluster",
+  "namespace": "api"
+}
+
+// Compare resources across environments (use multiple calls)
+{
+  "kind": "Deployment",
+  "context": "production-cluster",
+  "namespace": "app"
+}
+```
 
 ### 🎯 Custom Resource Definition (CRD) Support
 Automatically discovers and works with any CRDs in your cluster. Simply use the CRD's Kind name with `list_resources` or `describe_resource` tools.

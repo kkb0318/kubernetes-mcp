@@ -1,6 +1,8 @@
 # Kubernetes MCP Server
 
 [![tests](https://github.com/kkb0318/kubernetes-mcp/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/kkb0318/kubernetes-mcp/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/kkb0318/kubernetes-mcp/graph/badge.svg?token=RPOAC26LAH)](https://codecov.io/gh/kkb0318/kubernetes-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 https://github.com/user-attachments/assets/89df70b0-65d1-461c-b4ab-84b2087136fa
 

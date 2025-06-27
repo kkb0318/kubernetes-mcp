@@ -11,6 +11,7 @@ func RegisterTools(s *server.MCPServer, multiClient MultiClusterClientInterface)
 		NewLogTool(multiClient),
 		NewDescribeTool(multiClient),
 		NewListEventsTool(multiClient),
+		NewListContextsTool(multiClient),
 	}
 	for _, t := range tools {
 		s.AddTool(t.Tool(), t.Handler)

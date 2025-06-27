@@ -20,6 +20,7 @@ A Model Context Protocol (MCP) server that provides safe, read-only access to Ku
   - `describe_resource`: Get detailed information about specific resources
   - `get_pod_logs`: Retrieve pod logs with sophisticated filtering capabilities
   - `list_events`: List and filter Kubernetes events for debugging and monitoring
+  - `list_contexts`: List all available Kubernetes contexts from kubeconfig
 
 ## 🚀 Quick Start
 
@@ -212,6 +213,40 @@ List and filter Kubernetes events with advanced filtering options for debugging 
   "limit": 50
 }
 ```
+
+### `list_contexts`
+List all available Kubernetes contexts from your kubeconfig file.
+
+**Parameters:**
+None - this tool takes no parameters.
+
+**Example Response:**
+```json
+{
+  "contexts": [
+    {
+      "name": "production-cluster",
+      "is_current": false
+    },
+    {
+      "name": "staging-cluster", 
+      "is_current": true
+    },
+    {
+      "name": "development-cluster",
+      "is_current": false
+    }
+  ],
+  "current_context": "staging-cluster",
+  "total": 3
+}
+```
+
+**Use Case:**
+Perfect for multi-cluster workflows where you need to:
+- Discover available Kubernetes contexts
+- Identify the current active context
+- Plan operations across multiple clusters
 
 ## 🌟 Advanced Features
 
